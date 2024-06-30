@@ -50,7 +50,7 @@ pipeline {
                             enabled: yes
                     '''
                     sh '''
-                    ansible-playbook install_docker.yml
+                    sudo ansible-playbook install_docker.yml
                     '''
                 }
             }
