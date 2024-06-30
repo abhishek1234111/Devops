@@ -1,0 +1,88 @@
+pipeline {
+    agent {
+        label 'slave'  // Label for the slave node
+    }
+    environment {
+        DOCKER_IMAGE = 'my-php-webapp'
+        REPO_URL = 'https://github.com/your_username/your_repository.git'
+        CONTAINER_NAME = 'php_webapp'
+    }
+    stages {
+        stage('Install and Configure Puppet Agent') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                        sudo apt update
+                        sudo apt install -y puppet-agent
+                        sudo systemctl start puppet
+                        sudo systemctl enable puppet
+                        '''
+                    } catch (Exception e) {
+                        error("Failed to install and configure Puppet agent.")
+                    }
+                }
+            }
+        }
+        stage('Install Docker Using Ansible') {
+            steps {
+                script {
+                    // Create an Ansible playbook to install Docker
+                    writeFile file: 'install_docker.yml', text: '''
+                    ---
+                    - name: Install Docker
+                      hosts: localhost
+                      become: yes
+                      tasks:
+                        - name: Update the package list
+                          apt:
+                            update_cache: yes
+
+                        - name: Install Docker
+                          apt:
+                            name: docker.io
+                            state: present
+
+                        - name: Ensure Docker is started and enabled
+                          systemd:
+                            name: docker
+                            state: started
+                            enabled: yes
+                    '''
+                    sh '''
+                    ansible-playbook install_docker.yml
+                    '''
+                }
+            }
+        }
+        stage('Pull PHP Website and Build Docker Container') {
+            steps {
+                script {
+                    try {
+                        sh '''
+                        git clone ${REPO_URL}
+                        cd your_repository_directory
+                        docker build -t ${DOCKER_IMAGE} .
+                        docker run -d --name ${CONTAINER_NAME} -p 80:80 ${DOCKER_IMAGE}
+                        '''
+                    } catch (Exception e) {
+                        error("Failed to build and run the Docker container.")
+                    }
+                }
+            }
+        }
+    }
+    post {
+        failure {
+            script {
+                try {
+                    sh '''
+                    docker rm -f ${CONTAINER_NAME} || true
+                    '''
+                } catch (Exception e) {
+                    error("Failed to remove the running container after job failure.")
+                }
+            }
+        }
+    }
+}
