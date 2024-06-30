@@ -4,7 +4,7 @@ pipeline {
     }
     environment {
         DOCKER_IMAGE = 'my-php-webapp'
-        REPO_URL = 'https://github.com/your_username/your_repository.git'
+        REPO_URL = 'https://github.com/abhishek1234111/Devops.git'
         CONTAINER_NAME = 'php_webapp'
     }
     stages {
@@ -63,7 +63,7 @@ pipeline {
                         git clone ${REPO_URL}
                         cd your_repository_directory
                         docker build -t ${DOCKER_IMAGE} .
-                        docker run -d --name ${CONTAINER_NAME} -p 80:80 ${DOCKER_IMAGE}
+                        docker run -d --name ${CONTAINER_NAME} -p 8081:80 ${DOCKER_IMAGE}
                         '''
                     } catch (Exception e) {
                         error("Failed to build and run the Docker container.")
