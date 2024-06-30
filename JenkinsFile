@@ -1,25 +1,24 @@
 pipeline {
     agent {
-        label 'linux'  // Label for the slave node
+        label 'slave'  // Label for the slave node
     }
     environment {
         DOCKER_IMAGE = 'my-php-webapp'
-        REPO_URL = 'https://github.com/abhishek1234111/Devops.git'
+        REPO_URL = 'https://github.com/your_username/your_repository.git'
         CONTAINER_NAME = 'php_webapp'
+        ANSIBLE_PLAYBOOK = 'install_docker.yml'
     }
     stages {
         stage('Install and Configure Puppet Agent') {
             steps {
                 script {
                     try {
-                        sh '''
-                        sudo apt update
-                        sudo apt install -y puppet-agent
-                        sudo systemctl start puppet
-                        sudo systemctl enable puppet
-                        '''
+                        sh 'sudo apt update'
+                        sh 'sudo apt install -y puppet-agent'
+                        sh 'sudo systemctl start puppet'
+                        sh 'sudo systemctl enable puppet'
                     } catch (Exception e) {
-                        error("Failed to install and configure Puppet agent.")
+                        error("Failed to install and configure Puppet agent: ${e.message}")
                     }
                 }
             }
@@ -27,8 +26,7 @@ pipeline {
         stage('Install Docker Using Ansible') {
             steps {
                 script {
-                    // Create an Ansible playbook to install Docker
-                    writeFile file: 'install_docker.yml', text: '''
+                    writeFile file: "${ANSIBLE_PLAYBOOK}", text: '''
                     ---
                     - name: Install Docker
                       hosts: localhost
@@ -49,9 +47,7 @@ pipeline {
                             state: started
                             enabled: yes
                     '''
-                    sh '''
-                    sudo ansible-playbook install_docker.yml
-                    '''
+                    sh "ansible-playbook ${ANSIBLE_PLAYBOOK}"
                 }
             }
         }
@@ -59,14 +55,11 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh '''
-                        git clone ${REPO_URL}
-                        cd your_repository_directory
-                        docker build -t ${DOCKER_IMAGE} .
-                        docker run -d --name ${CONTAINER_NAME} -p 8081:80 ${DOCKER_IMAGE}
-                        '''
+                        sh "git clone ${REPO_URL}"
+                        sh "cd your_repository_directory && docker build -t ${DOCKER_IMAGE} ."
+                        sh "docker run -d --name ${CONTAINER_NAME} -p 80:80 ${DOCKER_IMAGE}"
                     } catch (Exception e) {
-                        error("Failed to build and run the Docker container.")
+                        error("Failed to build and run the Docker container: ${e.message}")
                     }
                 }
             }
@@ -76,11 +69,9 @@ pipeline {
         failure {
             script {
                 try {
-                    sh '''
-                    docker rm -f ${CONTAINER_NAME} || true
-                    '''
+                    sh "docker rm -f ${CONTAINER_NAME} || true"
                 } catch (Exception e) {
-                    error("Failed to remove the running container after job failure.")
+                    error("Failed to remove the running container after job failure: ${e.message}")
                 }
             }
         }
