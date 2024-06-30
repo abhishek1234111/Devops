@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'slave'  // Label for the slave node
+        label 'linux'  // Label for the slave node
     }
     environment {
         DOCKER_IMAGE = 'my-php-webapp'
